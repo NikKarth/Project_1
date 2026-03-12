@@ -13,10 +13,7 @@ public class MarketScheduler {
     public MarketScheduler() {
         var manager = PortfolioManager.getInstance();
         this.marketService = manager.getMarketService();
-
-        // Setup OrderService with notifications
-        this.orderService = new OrderService(manager.getPortfolio(), marketService,
-                new com.example.tradesimulator.notification.ConsoleNotificationService());
+        this.orderService = manager.getOrderService();
     }
 
     /** Update market prices every 5 seconds */

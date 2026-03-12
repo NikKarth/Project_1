@@ -25,13 +25,7 @@ public class TradeController {
         // Get singleton portfolio and market
         var manager = PortfolioManager.getInstance();
         this.marketService = manager.getMarketService();
-
-        // Setup notifications with decorator pattern
-        NotificationService notificationService = new ConsoleNotificationService();
-        // Wrap with Email decorator for future extension
-        notificationService = new EmailNotificationDecorator(notificationService);
-
-        this.orderService = new OrderService(manager.getPortfolio(), marketService, notificationService);
+        this.orderService = manager.getOrderService();
     }
 
     /** Get current portfolio and cash */
