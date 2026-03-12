@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TradeSimulator v1.0</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        input { margin: 0 5px; }
+    </style>
+</head>
+<body>
+    <h1>TradeSimulator v1.0</h1>
+
+    <h2>Portfolio</h2>
+    <div id="portfolio"></div>
+
+    <h2>Market</h2>
+    <table id="marketTable">
+        <thead>
+            <tr><th>Ticker</th><th>Price</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h2>Place Market Order</h2>
+    <input id="mTicker" placeholder="Ticker">
+    <input id="mQty" type="number" placeholder="Quantity">
+    <select id="mSide">
+        <option value="BUY">BUY</option>
+        <option value="SELL">SELL</option>
+    </select>
+    <button onclick="placeMarketOrder()">Submit</button>
+
+    <h2>Place Limit Order</h2>
+    <input id="lTicker" placeholder="Ticker">
+    <input id="lQty" type="number" placeholder="Quantity">
+    <select id="lSide">
+        <option value="BUY">BUY</option>
+        <option value="SELL">SELL</option>
+    </select>
+    <input id="lPrice" type="number" placeholder="Limit Price" step="0.01">
+    <button onclick="placeLimitOrder()">Submit</button>
+
+    <h2>Executed Trades</h2>
+    <table id="tradesTable">
+        <thead>
+            <tr><th>Timestamp</th><th>Ticker</th><th>Side</th><th>Quantity</th><th>Price</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h2>Pending Limit Orders</h2>
+    <table id="pendingTable">
+        <thead>
+            <tr><th>Ticker</th><th>Side</th><th>Quantity</th><th>Limit Price</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const baseUrl = "/api";
+
+        async function fetchPortfolio() {
+            const res = await fetch(`${baseUrl}/portfolio`);
+            const data = await res.json();
+            document.getElementById("portfolio").innerHTML = `
+                Cash: $${data.cash}<br>
+                Holdings: ${JSON.stringify(data.holdings)}<br>
+                Total Value: $${data.totalValue}
+            `;
+        }
+
+        async function fetchMarket() {
+            const res = await fetch(`${baseUrl}/market`);
+            const data = await res.json();
+            const tbody = document.querySelector("#marketTable tbody");
+            tbody.innerHTML = "";
+            for (const [ticker, price] of Object.entries(data)) {
+                const row = `<tr><td>${ticker}</td><td>$${price}</td></tr>`;
+                tbody.innerHTML += row;
+            }
+        }
+
+        async function fetchTrades() {
+            const res = await fetch(`${baseUrl}/trades`);
+            const data = await res.json();
+            const tbody = document.querySelector("#tradesTable tbody");
+            tbody.innerHTML = "";
+            data.forEach(trade => {
+                tbody.innerHTML += `<tr>
+                    <td>${trade.timestamp}</td>
+                    <td>${trade.ticker}</td>
+                    <td>${trade.side}</td>
+                    <td>${trade.quantity}</td>
+                    <td>$${trade.executedPrice || 'N/A'}</td>
+                </tr>`;
+            });
+        }
+
+        async function fetchPending() {
+            const res = await fetch(`${baseUrl}/pending`);
+            const data = await res.json();
+            const tbody = document.querySelector("#pendingTable tbody");
+            tbody.innerHTML = "";
+            data.forEach(order => {
+                tbody.innerHTML += `<tr>
+                    <td>${order.ticker}</td>
+                    <td>${order.side}</td>
+                    <td>${order.quantity}</td>
+                    <td>$${order.limitPrice}</td>
+                </tr>`;
+            });
+        }
+
+        async function placeMarketOrder() {
+            const ticker = document.getElementById("mTicker").value;
+            const qty = document.getElementById("mQty").value;
+            const side = document.getElementById("mSide").value;
+            await fetch(`${baseUrl}/order/market?ticker=${ticker}&quantity=${qty}&side=${side}`, { method: "POST" });
+        }
+
+        async function placeLimitOrder() {
+            const ticker = document.getElementById("lTicker").value;
+            const qty = document.getElementById("lQty").value;
+            const side = document.getElementById("lSide").value;
+            const price = document.getElementById("lPrice").value;
+            await fetch(`${baseUrl}/order/limit?ticker=${ticker}&quantity=${qty}&side=${side}&limitPrice=${price}`, { method: "POST" });
+        }
+
+        // Auto refresh every 5 seconds
+        setInterval(() => {
+            fetchPortfolio();
+            fetchMarket();
+            fetchTrades();
+            fetchPending();
+        }, 5000);
+
+        // Initial load
+        fetchPortfolio();
+        fetchMarket();
+        fetchTrades();
+        fetchPending();
+    </script>
+</body>
+</html>
