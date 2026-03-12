@@ -32,9 +32,10 @@ jobs:
       - run: mvn -q package -DskipTests
       - run: docker build -t tradesimulator .
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+
+#  deploy:
+#    needs: build
+#    runs-on: ubuntu-latest
+#    if: github.ref == 'refs/heads/main'
+#    steps:
+#      - run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
