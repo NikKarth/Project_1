@@ -42,6 +42,7 @@ public class OrderService {
     /** Execute an order and update portfolio */
     private void executeOrder(Order order, BigDecimal price) {
         BigDecimal total = order.execute(price);
+        order.setExecutedPrice(price);
 
         if (order.getSide() == Order.Side.BUY) {
             if (portfolio.getCash().compareTo(total) < 0) {
