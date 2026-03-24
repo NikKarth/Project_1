@@ -12,7 +12,7 @@ public class MarketService {
 
     private final Map<String, Stock> market;
     private final List<PriceObserver> observers;
-    private final PriceUpdateStrategy priceUpdateStrategy;
+    private PriceUpdateStrategy priceUpdateStrategy;
 
     public MarketService(PriceUpdateStrategy priceUpdateStrategy) {
         this.priceUpdateStrategy = priceUpdateStrategy;
@@ -55,5 +55,25 @@ public class MarketService {
     /** Get a copy of the market map */
     public Map<String, Stock> getMarket() {
         return Collections.unmodifiableMap(market);
+    }
+
+    /** Set the pricing strategy */
+    public void setStrategy(String strategyName) {
+        // For simplicity, hardcode the strategies
+        switch (strategyName) {
+            case "random-walk":
+                this.priceUpdateStrategy = new com.example.tradesimulator.strategy.RandomWalkStrategy(new Random(), 0.02);
+                break;
+            case "mean-reversion":
+                this.priceUpdateStrategy = new com.example.tradesimulator.strategy.MeanReversionStrategy();
+                break;
+            case "trend-following":
+                this.priceUpdateStrategy = new com.example.tradesimulator.strategy.TrendFollowingStrategy();
+                break;
+            default:
+                // Default to random-walk
+                this.priceUpdateStrategy = new com.example.tradesimulator.strategy.RandomWalkStrategy(new Random(), 0.02);
+                break;
+        }
     }
 }

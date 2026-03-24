@@ -9,29 +9,47 @@ import com.example.tradesimulator.service.OrderService;
 import com.example.tradesimulator.strategy.PriceUpdateStrategy;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class PortfolioManager {
 
     private static PortfolioManager instance;
 
-    private final Portfolio portfolio;
+    private final Map<String, Portfolio> portfolios;
+    private final Map<String, OrderService> orderServices;
+    private final Map<String, NotificationService> notificationServices;
     private final MarketService marketService;
-    private final OrderService orderService;
 
     /** Private constructor to enforce singleton */
     private PortfolioManager() {
-        // Start user with $10,000
-        this.portfolio = new Portfolio(BigDecimal.valueOf(10_000));
+        this.portfolios = new HashMap<>();
+        this.orderServices = new HashMap<>();
+        this.notificationServices = new HashMap<>();
 
         // Use RandomWalkStrategy with seeded Random for determinism
         PriceUpdateStrategy strategy = new com.example.tradesimulator.strategy.RandomWalkStrategy(new Random(), 0.02);
         this.marketService = new MarketService(strategy);
 
-        // Initialize OrderService with notifications
+        // Initialize 3 users
+        initializeUser("user1");
+        initializeUser("user2");
+        initializeUser("user3");
+    }
+
+    private void initializeUser(String userId) {
+        // Start user with $10,000
+        Portfolio portfolio = new Portfolio(BigDecimal.valueOf(10_000));
+        portfolios.put(userId, portfolio);
+
+        // Default notification: console only
         NotificationService notificationService = new ConsoleNotificationService();
-        notificationService = new EmailNotificationDecorator(notificationService);
-        this.orderService = new OrderService(portfolio, marketService, notificationService);
+        notificationServices.put(userId, notificationService);
+
+        // Initialize OrderService
+        OrderService orderService = new OrderService(portfolio, marketService, notificationService);
+        orderServices.put(userId, orderService);
     }
 
     /** Thread-safe singleton accessor */
@@ -42,15 +60,31 @@ public class PortfolioManager {
         return instance;
     }
 
-    public Portfolio getPortfolio() {
-        return portfolio;
+    public Portfolio getPortfolio(String userId) {
+        return portfolios.get(userId);
+    }
+
+    public OrderService getOrderService(String userId) {
+        return orderServices.get(userId);
     }
 
     public MarketService getMarketService() {
         return marketService;
     }
 
-    public OrderService getOrderService() {
-        return orderService;
+    public void setNotificationForUser(String userId, NotificationService notificationService) {
+        notificationServices.put(userId, notificationService);
+        // Update the orderService with new notification
+        OrderService orderService = orderServices.get(userId);
+        if (orderService != null) {
+            // Since OrderService has final notificationService, recreate
+            Portfolio portfolio = portfolios.get(userId);
+            OrderService newOrderService = new OrderService(portfolio, marketService, notificationService);
+            orderServices.put(userId, newOrderService);
+        }
+    }
+
+    public Map<String, OrderService> getAllOrderServices() {
+        return orderServices;
     }
 }

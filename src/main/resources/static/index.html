@@ -145,25 +145,26 @@
         }
 
         async function fetchBadge() {
-            const res = await fetch(`${baseUrl}/badge`);
-            const count = await res.json();
+            const user = getCurrentUser();
+            const res = await fetch(`${baseUrl}/badge?user=${user}`);
+            const count = await res.text(); // Since it's int, but to be safe
             document.getElementById("badge").textContent = `Notifications: ${count}`;
         }
 
         async function placeMarketOrder() {
+            const user = getCurrentUser();
             const ticker = document.getElementById("mTicker").value;
             const qty = document.getElementById("mQty").value;
             const side = document.getElementById("mSide").value;
-            const user = getCurrentUser();
             await fetch(`${baseUrl}/order/market?ticker=${ticker}&quantity=${qty}&side=${side}&user=${user}`, { method: "POST" });
         }
 
         async function placeLimitOrder() {
+            const user = getCurrentUser();
             const ticker = document.getElementById("lTicker").value;
             const qty = document.getElementById("lQty").value;
             const side = document.getElementById("lSide").value;
             const price = document.getElementById("lPrice").value;
-            const user = getCurrentUser();
             await fetch(`${baseUrl}/order/limit?ticker=${ticker}&quantity=${qty}&side=${side}&limitPrice=${price}&user=${user}`, { method: "POST" });
         }
 
@@ -171,6 +172,8 @@
             const strategy = document.getElementById("strategySelect").value;
             await fetch(`${baseUrl}/strategy?strategyName=${strategy}`, { method: "POST" });
         }
+
+        let refreshInterval;
 
         async function setNotifications() {
             const user = getCurrentUser();
@@ -180,7 +183,12 @@
             if (document.getElementById("smsCheck").checked) channels.push("sms");
             if (document.getElementById("dashboardCheck").checked) channels.push("dashboard");
             const params = channels.map(c => `channels=${c}`).join('&');
+            
+            // Pause auto-refresh while setting notifications
+            clearInterval(refreshInterval);
             await fetch(`${baseUrl}/notification?user=${user}&${params}`, { method: "POST" });
+            // Resume auto-refresh
+            startAutoRefresh();
         }
 
         async function loadStrategies() {
@@ -193,17 +201,34 @@
             });
         }
 
+        function startAutoRefresh() {
+            refreshInterval = setInterval(() => {
+                fetchPortfolio();
+                fetchMarket();
+                fetchTrades();
+                fetchPending();
+                fetchBadge();
+            }, 5000);
+        }
+
         // Auto refresh every 5 seconds
-        setInterval(() => {
-            fetchPortfolio();
-            fetchMarket();
-            fetchTrades();
-            fetchPending();
-            fetchBadge();
-        }, 5000);
+        startAutoRefresh();
 
         // Initial load
         loadStrategies();
+        fetchPortfolio();
+        fetchMarket();
+        fetchTrades();
+        fetchPending();
+        fetchBadge();
+
+        // User change listener
+        document.getElementById("userSelect").addEventListener("change", () => {
+            fetchPortfolio();
+            fetchTrades();
+            fetchPending();
+            fetchBadge();
+        });
         fetchPortfolio();
         fetchMarket();
         fetchTrades();

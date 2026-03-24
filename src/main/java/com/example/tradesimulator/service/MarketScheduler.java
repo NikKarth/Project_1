@@ -7,19 +7,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class MarketScheduler {
 
-    private final MarketService marketService;
-    private final OrderService orderService;
+    private final PortfolioManager portfolioManager;
 
     public MarketScheduler() {
-        var manager = PortfolioManager.getInstance();
-        this.marketService = manager.getMarketService();
-        this.orderService = manager.getOrderService();
+        this.portfolioManager = PortfolioManager.getInstance();
     }
 
     /** Update market prices every 5 seconds */
     @Scheduled(fixedRate = 5000)
     public void updateMarket() {
-        marketService.updateMarket();
-        orderService.checkLimitOrders();
+        portfolioManager.getMarketService().updateMarket();
+        // Check limit orders for all users
+        for (OrderService orderService : portfolioManager.getAllOrderServices().values()) {
+            orderService.checkLimitOrders();
+        }
     }
 }
