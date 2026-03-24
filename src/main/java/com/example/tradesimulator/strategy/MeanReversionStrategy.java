@@ -12,7 +12,7 @@ public class MeanReversionStrategy implements PriceUpdateStrategy {
     private final Map<String, List<BigDecimal>> priceHistory = new HashMap<>();
     private final int historySize = 10; // moving average of last 10 prices
     private final double reversionStrength = 0.1; // how strongly it pulls towards mean
-    private final double randomNoise = 0.02; // random fluctuation component
+    private final double randomNoise = 0.005; // much smaller random fluctuation for mean reversion
 
     @Override
     public void updatePrices(Map<String, Stock> market) {
