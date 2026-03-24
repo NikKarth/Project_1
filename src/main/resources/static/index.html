@@ -14,10 +14,25 @@
 <body>
     <h1>TradeSimulator v1.0</h1>
 
+    <div>
+        <label for="userSelect">User:</label>
+        <select id="userSelect">
+            <option value="user1">User 1</option>
+            <option value="user2">User 2</option>
+            <option value="user3">User 3</option>
+        </select>
+        <span id="badge">Notifications: 0</span>
+    </div>
+
     <h2>Portfolio</h2>
     <div id="portfolio"></div>
 
     <h2>Market</h2>
+    <div>
+        <label for="strategySelect">Pricing Strategy:</label>
+        <select id="strategySelect"></select>
+        <button onclick="setStrategy()">Set Strategy</button>
+    </div>
     <table id="marketTable">
         <thead>
             <tr><th>Ticker</th><th>Price</th></tr>
@@ -44,7 +59,14 @@
     <input id="lPrice" type="number" placeholder="Limit Price" step="0.01">
     <button onclick="placeLimitOrder()">Submit</button>
 
-    <h2>Executed Trades</h2>
+    <h2>Notifications</h2>
+    <div>
+        <label><input type="checkbox" id="consoleCheck" checked> Console</label>
+        <label><input type="checkbox" id="emailCheck"> Email</label>
+        <label><input type="checkbox" id="smsCheck"> SMS</label>
+        <label><input type="checkbox" id="dashboardCheck"> Dashboard</label>
+        <button onclick="setNotifications()">Set Notifications</button>
+    </div>
     <table id="tradesTable">
         <thead>
             <tr><th>Timestamp</th><th>Ticker</th><th>Side</th><th>Quantity</th><th>Price</th></tr>
@@ -63,8 +85,13 @@
     <script>
         const baseUrl = "/api";
 
+        function getCurrentUser() {
+            return document.getElementById("userSelect").value;
+        }
+
         async function fetchPortfolio() {
-            const res = await fetch(`${baseUrl}/portfolio`);
+            const user = getCurrentUser();
+            const res = await fetch(`${baseUrl}/portfolio?user=${user}`);
             const data = await res.json();
             document.getElementById("portfolio").innerHTML = `
                 Cash: $${data.cash}<br>
@@ -85,7 +112,8 @@
         }
 
         async function fetchTrades() {
-            const res = await fetch(`${baseUrl}/trades`);
+            const user = getCurrentUser();
+            const res = await fetch(`${baseUrl}/trades?user=${user}`);
             const data = await res.json();
             const tbody = document.querySelector("#tradesTable tbody");
             tbody.innerHTML = "";
@@ -101,7 +129,8 @@
         }
 
         async function fetchPending() {
-            const res = await fetch(`${baseUrl}/pending`);
+            const user = getCurrentUser();
+            const res = await fetch(`${baseUrl}/pending?user=${user}`);
             const data = await res.json();
             const tbody = document.querySelector("#pendingTable tbody");
             tbody.innerHTML = "";
@@ -115,11 +144,18 @@
             });
         }
 
+        async function fetchBadge() {
+            const res = await fetch(`${baseUrl}/badge`);
+            const count = await res.json();
+            document.getElementById("badge").textContent = `Notifications: ${count}`;
+        }
+
         async function placeMarketOrder() {
             const ticker = document.getElementById("mTicker").value;
             const qty = document.getElementById("mQty").value;
             const side = document.getElementById("mSide").value;
-            await fetch(`${baseUrl}/order/market?ticker=${ticker}&quantity=${qty}&side=${side}`, { method: "POST" });
+            const user = getCurrentUser();
+            await fetch(`${baseUrl}/order/market?ticker=${ticker}&quantity=${qty}&side=${side}&user=${user}`, { method: "POST" });
         }
 
         async function placeLimitOrder() {
@@ -127,7 +163,34 @@
             const qty = document.getElementById("lQty").value;
             const side = document.getElementById("lSide").value;
             const price = document.getElementById("lPrice").value;
-            await fetch(`${baseUrl}/order/limit?ticker=${ticker}&quantity=${qty}&side=${side}&limitPrice=${price}`, { method: "POST" });
+            const user = getCurrentUser();
+            await fetch(`${baseUrl}/order/limit?ticker=${ticker}&quantity=${qty}&side=${side}&limitPrice=${price}&user=${user}`, { method: "POST" });
+        }
+
+        async function setStrategy() {
+            const strategy = document.getElementById("strategySelect").value;
+            await fetch(`${baseUrl}/strategy?strategyName=${strategy}`, { method: "POST" });
+        }
+
+        async function setNotifications() {
+            const user = getCurrentUser();
+            const channels = [];
+            if (document.getElementById("consoleCheck").checked) channels.push("console");
+            if (document.getElementById("emailCheck").checked) channels.push("email");
+            if (document.getElementById("smsCheck").checked) channels.push("sms");
+            if (document.getElementById("dashboardCheck").checked) channels.push("dashboard");
+            const params = channels.map(c => `channels=${c}`).join('&');
+            await fetch(`${baseUrl}/notification?user=${user}&${params}`, { method: "POST" });
+        }
+
+        async function loadStrategies() {
+            const res = await fetch(`${baseUrl}/strategies`);
+            const strategies = await res.json();
+            const select = document.getElementById("strategySelect");
+            select.innerHTML = "";
+            strategies.forEach(s => {
+                select.innerHTML += `<option value="${s}">${s}</option>`;
+            });
         }
 
         // Auto refresh every 5 seconds
@@ -136,13 +199,16 @@
             fetchMarket();
             fetchTrades();
             fetchPending();
+            fetchBadge();
         }, 5000);
 
         // Initial load
+        loadStrategies();
         fetchPortfolio();
         fetchMarket();
         fetchTrades();
         fetchPending();
+        fetchBadge();
     </script>
 </body>
 </html>

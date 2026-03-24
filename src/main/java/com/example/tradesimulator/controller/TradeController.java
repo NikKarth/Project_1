@@ -2,15 +2,13 @@ package com.example.tradesimulator.controller;
 
 import com.example.tradesimulator.model.Order;
 import com.example.tradesimulator.model.LimitOrder;
-import com.example.tradesimulator.notification.ConsoleNotificationService;
-import com.example.tradesimulator.notification.NotificationService;
-import com.example.tradesimulator.notification.EmailNotificationDecorator;
 import com.example.tradesimulator.service.MarketService;
 import com.example.tradesimulator.service.OrderService;
 import com.example.tradesimulator.singleton.PortfolioManager;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,8 +41,11 @@ public class TradeController {
     @GetMapping("/market")
     public Map<String, BigDecimal> getMarket() {
         var market = marketService.getMarket();
-        return market.entrySet().stream()
-                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getPrice()));
+        Map<String, BigDecimal> prices = new HashMap<>();
+        for (var entry : market.entrySet()) {
+            prices.put(entry.getKey(), entry.getValue().getPrice());
+        }
+        return prices;
     }
 
     /** Get executed trades */
