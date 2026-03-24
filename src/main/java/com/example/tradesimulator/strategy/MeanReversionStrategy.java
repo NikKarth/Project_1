@@ -47,3 +47,4 @@ public class MeanReversionStrategy implements PriceUpdateStrategy {
             stock.setPrice(newPrice.max(BigDecimal.valueOf(0.01)));
         }
     }
+}

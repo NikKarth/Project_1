@@ -174,6 +174,7 @@
         }
 
         let refreshInterval;
+        let isSettingNotifications = false;
 
         async function setNotifications() {
             const user = getCurrentUser();
@@ -184,11 +185,10 @@
             if (document.getElementById("dashboardCheck").checked) channels.push("dashboard");
             const params = channels.map(c => `channels=${c}`).join('&');
             
-            // Pause auto-refresh while setting notifications
-            clearInterval(refreshInterval);
+            // Prevent auto-refresh during notification setting
+            isSettingNotifications = true;
             await fetch(`${baseUrl}/notification?user=${user}&${params}`, { method: "POST" });
-            // Resume auto-refresh
-            startAutoRefresh();
+            isSettingNotifications = false;
         }
 
         async function loadStrategies() {
@@ -203,11 +203,13 @@
 
         function startAutoRefresh() {
             refreshInterval = setInterval(() => {
-                fetchPortfolio();
-                fetchMarket();
-                fetchTrades();
-                fetchPending();
-                fetchBadge();
+                if (!isSettingNotifications) {
+                    fetchPortfolio();
+                    fetchMarket();
+                    fetchTrades();
+                    fetchPending();
+                    fetchBadge();
+                }
             }, 5000);
         }
 
